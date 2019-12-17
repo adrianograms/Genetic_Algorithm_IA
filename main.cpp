@@ -24,68 +24,51 @@ struct Individuo
 //----Cabeçalho da Funções----------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------------------
 
-/*
-/* Fução que gera executa o algoritmo genetico pelo numero de gerações especificados e printa a geração final e o melhor individuo.
-*/
+
+// Fução que gera executa o algoritmo genetico pelo numero de gerações especificados e printa a geração final e o melhor individuo.
 void gen(uint32_t tam_pop, 
          uint32_t max_gen, 
          double prob_cruz, 
          double prob_mut, 
          bool elitismo);
 
-/*
-/* Função que calcula o fitness do individuo, baseado no seu cromossomo
-*/
+
+// Função que calcula o fitness do individuo, baseado no seu cromossomo
 double func_obj(double x);
 
-/*
-/* Função que inicia a população com valores do cromossomo variando de [0, 500]
-*/
+// Função que inicia a população com valores do cromossomo variando de [0, 500]
 Individuo *inic_pop(uint32_t tam_pop);
 
-/*
-/* Função que seleciona os dois melhores inidividuos de um subgrupo da população, esse subgrupo é determinado pela variavel
-/* global torneio.
-*/
+// Função que seleciona os dois melhores inidividuos de um subgrupo da população, esse subgrupo é determinado pela variavel
+// global torneio.
 std::pair<uint32_t, uint32_t> selecao(Individuo *pop, 
                                       uint32_t tam_pop);
 
-/*
-/* Função que seleciona o melhor inidividuo de um subgrupo da população, esse subgrupo é determinado pela variavel global 
-/* torneio.
-*/
+// Função que seleciona o melhor inidividuo de um subgrupo da população, esse subgrupo é determinado pela variavel global 
+// torneio.
 uint32_t alt_selecao(Individuo *pop, 
                      uint32_t tam_pop);
 
-/*
-/* Função que gera a proxima geração de inidividuos
-*/
+
+// Função que gera a proxima geração de inidividuos
 Individuo *geracao(Individuo *pop_atual, 
                    uint32_t tam_pop, 
                    double p_cruz, 
                    double p_mut, 
                    bool elitismo);
 
-/*
-/* Função que gera um valor aleatorio entre [-alfa, 1 + alfa], sendo alfa a variavel global alfa.
-*/
+// Função que gera um valor aleatorio entre [-alfa, 1 + alfa], sendo alfa a variavel global alfa.
 double random_number();
 
-/*
-/* Função que retorna o melhor individuo da população.
-*/
+// Função que retorna o melhor individuo da população.
 Individuo melhor_individuo(Individuo *pop, 
                            uint32_t tam_pop);
 
-/*
-/* Função que pode gerar uma mutação no individuo, isso depende do p_mut que determina a chance de gerar uma mutação
-*/
+// Função que pode gerar uma mutação no individuo, isso depende do p_mut que determina a chance de gerar uma mutação
 void mutacao(Individuo &ind, 
              double p_mut);
 
-/*
-/* Função que faz o cruzamento de dois inidividuos, gerando dois novos inidividous para a proximação população.
-*/
+// Função que faz o cruzamento de dois inidividuos, gerando dois novos inidividous para a proximação população.
 std::pair<Individuo, Individuo> cruzamento(Individuo &pai1, Individuo &pai2, double p_cruz, double p_mut, bool elitismo);
 
 //---------------------------------------------------------------------------------------------------------------------------------
@@ -114,7 +97,8 @@ void gen(uint32_t tam_pop, uint32_t max_gen, double prob_cruz, double prob_mut, 
     std::cout << "Cromossomo" << " | " << "Fitness" << std::endl;
     std::cout << "--------------------" << std::endl;
 
-    imprimi_pop(pop, tam_pop);
+    if(tam_pop < 250)
+        imprimi_pop(pop, tam_pop);
 
     Individuo melhor = melhor_individuo(pop, tam_pop);
     std::cout << "Melhor Individuo é:" << std::endl;
@@ -155,21 +139,6 @@ Individuo melhor_individuo(Individuo *pop, uint32_t tam_pop)
     }
     return melhor;
 }
-
-// uint32_t selecao(Individuo *pop, uint32_t tam_pop, double soma_fit)
-// {
-//     double soma_parte = 0.0;
-//     double rnd = ((double)(rand()%10000)/10000.0)*soma_fit;
-//     std::cout << rnd << std::endl;
-//     uint32_t j;
-//     for(j = 0; j < tam_pop && soma_parte < rnd;)
-//     {
-//         soma_parte += (1/pop[j].fitness);
-//         j++;
-//     }
-//     return j--;
-    
-// }
 
 std::pair<uint32_t, uint32_t> selecao(Individuo *pop, uint32_t tam_pop)
 {
@@ -321,13 +290,13 @@ int main()
 {
     srand(time(NULL));
 
-    bool sem_menu = false;
+    bool sem_menu = true;
 
     uint32_t tam_pop = 100;
     uint32_t max_gen = 1000;
     double prob_cruz = 0.8;
     double prob_mut = 0.05;
-    bool elitismo = true;
+    bool elitismo = false;
 
     if(sem_menu)
     {
