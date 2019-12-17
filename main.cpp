@@ -3,11 +3,15 @@
 #include <ctime>
 #include <cmath>
 
-#define ALFA 0.5
-#define TORNEIO 0.1
+//----------------------------------------------------------------------------------------------------------------------------------
+//----Variaveis Globais-------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------------------
+
+double alfa = 0.5;
+double torneio = 0.1;
 
 //----------------------------------------------------------------------------------------------------------------------------------
-//----Estruturas---------------------------------------------------------------------------------------------------------------------
+//----Estruturas--------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------------------
 
 struct Individuo
@@ -16,27 +20,78 @@ struct Individuo
     double fitness;
 };
 
-
 //----------------------------------------------------------------------------------------------------------------------------------
-//----Cabeçalho---------------------------------------------------------------------------------------------------------------------
+//----Cabeçalho da Funções----------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------------------
 
-void gen(uint32_t tam_pop, uint32_t max_gen, double prob_cruz, double prob_mut);
+/*
+/* Fução que gera executa o algoritmo genetico pelo numero de gerações especificados e printa a geração final e o melhor individuo.
+*/
+void gen(uint32_t tam_pop, 
+         uint32_t max_gen, 
+         double prob_cruz, 
+         double prob_mut, 
+         bool elitismo);
+
+/*
+/* Função que calcula o fitness do individuo, baseado no seu cromossomo
+*/
 double func_obj(double x);
+
+/*
+/* Função que inicia a população com valores do cromossomo variando de [0, 500]
+*/
 Individuo *inic_pop(uint32_t tam_pop);
-double min_fitness(Individuo *pop, uint32_t tam_pop);
-double media_fitness(Individuo *pop, uint32_t tam_pop);
-double soma_fitness(Individuo *pop, uint32_t tam_pop);
-//uint32_t selecao(Individuo *pop, uint32_t tam_pop, double soma_fit);
-std::pair<uint32_t, uint32_t> selecao(Individuo *pop, uint32_t tam_pop, double soma_fit);
-Individuo *geracao(Individuo *pop_atual, uint32_t tam_pop, double p_cruz, double p_mut);
+
+/*
+/* Função que seleciona os dois melhores inidividuos de um subgrupo da população, esse subgrupo é determinado pela variavel
+/* global torneio.
+*/
+std::pair<uint32_t, uint32_t> selecao(Individuo *pop, 
+                                      uint32_t tam_pop);
+
+/*
+/* Função que seleciona o melhor inidividuo de um subgrupo da população, esse subgrupo é determinado pela variavel global 
+/* torneio.
+*/
+uint32_t alt_selecao(Individuo *pop, 
+                     uint32_t tam_pop);
+
+/*
+/* Função que gera a proxima geração de inidividuos
+*/
+Individuo *geracao(Individuo *pop_atual, 
+                   uint32_t tam_pop, 
+                   double p_cruz, 
+                   double p_mut, 
+                   bool elitismo);
+
+/*
+/* Função que gera um valor aleatorio entre [-alfa, 1 + alfa], sendo alfa a variavel global alfa.
+*/
 double random_number();
-void mutacao(Individuo &ind, double p_mut);
+
+/*
+/* Função que retorna o melhor individuo da população.
+*/
+Individuo melhor_individuo(Individuo *pop, 
+                           uint32_t tam_pop);
+
+/*
+/* Função que pode gerar uma mutação no individuo, isso depende do p_mut que determina a chance de gerar uma mutação
+*/
+void mutacao(Individuo &ind, 
+             double p_mut);
+
+/*
+/* Função que faz o cruzamento de dois inidividuos, gerando dois novos inidividous para a proximação população.
+*/
 std::pair<Individuo, Individuo> cruzamento(Individuo &pai1, Individuo &pai2, double p_cruz, double p_mut, bool elitismo);
 
 //---------------------------------------------------------------------------------------------------------------------------------
 //----Implementação----------------------------------------------------------------------------------------------------------------
 //---------------------------------------------------------------------------------------------------------------------------------
+
 void imprimi_pop(Individuo *pop,uint32_t tam_pop)
 {
     for(uint32_t i =0; i< tam_pop; i++)
@@ -47,18 +102,27 @@ void imprimi_pop(Individuo *pop,uint32_t tam_pop)
 }
 
 
-void gen(uint32_t tam_pop, uint32_t max_gen, double prob_cruz, double prob_mut)
+void gen(uint32_t tam_pop, uint32_t max_gen, double prob_cruz, double prob_mut, bool elitismo)
 {
     uint32_t ger = 0;  
     Individuo *pop = inic_pop(tam_pop);
     for(uint32_t i =0; i < max_gen; i++)
     {
-        pop = geracao(pop, tam_pop, prob_cruz, prob_mut);
+        pop = geracao(pop, tam_pop, prob_cruz, prob_mut, elitismo);
     }
     std::cout << "Ultima Geração:" << std::endl;
     std::cout << "Cromossomo" << " | " << "Fitness" << std::endl;
     std::cout << "--------------------" << std::endl;
+
     imprimi_pop(pop, tam_pop);
+
+    Individuo melhor = melhor_individuo(pop, tam_pop);
+    std::cout << "Melhor Individuo é:" << std::endl;
+
+    std::cout << "Cromossomo: " << melhor.crom << std::endl;
+    std::cout << "Fitness: " << melhor.fitness << std::endl;
+
+    std::cout << "-------------------------------" << std::endl; 
 }
 
 double func_obj(double x)
@@ -81,36 +145,15 @@ Individuo *inic_pop(uint32_t tam_pop)
     return populacao;
 }
 
-double min_fitness(Individuo *pop, uint32_t tam_pop)
+Individuo melhor_individuo(Individuo *pop, uint32_t tam_pop)
 {
-    double menor = pop[0].fitness;
-    for(uint32_t i = 1; i < tam_pop; i++)
+    Individuo melhor = pop[0];
+    for(uint32_t i =1; i < tam_pop; i++)
     {
-        if(menor > pop[i].fitness)
-            menor = pop[i].fitness;
+        if(melhor.fitness > pop[i].fitness)
+            melhor = pop[i];
     }
-    return menor;
-}
-
-double media_fitness(Individuo *pop, uint32_t tam_pop)
-{
-    double media = 0.0;
-    for(uint32_t i =0; i< tam_pop; i++)
-    {
-        media += pop[i].fitness;
-    }
-    return media/tam_pop;
-}
-
-double soma_fitness(Individuo *pop, uint32_t tam_pop)
-{
-    double soma = 0.0;
-    for(uint32_t i=0; i<tam_pop; i++)
-    {
-        if(pop[i].fitness != 0.0)
-            soma += (1/pop[i].fitness);
-    }
-    return soma;
+    return melhor;
 }
 
 // uint32_t selecao(Individuo *pop, uint32_t tam_pop, double soma_fit)
@@ -128,9 +171,9 @@ double soma_fitness(Individuo *pop, uint32_t tam_pop)
     
 // }
 
-std::pair<uint32_t, uint32_t> selecao(Individuo *pop, uint32_t tam_pop, double soma_fit)
+std::pair<uint32_t, uint32_t> selecao(Individuo *pop, uint32_t tam_pop)
 {
-    uint32_t num_elementos = tam_pop * TORNEIO;
+    uint32_t num_elementos = tam_pop * torneio;
     std::pair<uint32_t, double> escolhidos[num_elementos];
     std::pair<uint32_t, double> menor, vice_menor;
     escolhidos[0].first = rand()%num_elementos;
@@ -159,9 +202,9 @@ std::pair<uint32_t, uint32_t> selecao(Individuo *pop, uint32_t tam_pop, double s
     return std::pair<uint32_t, uint32_t> (menor.first, vice_menor.first);
 }
 
-uint32_t alt_selecao(Individuo *pop, uint32_t tam_pop, double soma_fit)
+uint32_t alt_selecao(Individuo *pop, uint32_t tam_pop)
 {
-    uint32_t num_elementos = tam_pop * TORNEIO;
+    uint32_t num_elementos = tam_pop * torneio;
     std::pair<uint32_t, double> menor;
 
     menor.first = rand()%num_elementos;
@@ -180,18 +223,15 @@ uint32_t alt_selecao(Individuo *pop, uint32_t tam_pop, double soma_fit)
     return menor.first;
 }
 
-Individuo *geracao(Individuo *pop_atual, uint32_t tam_pop, double p_cruz, double p_mut)
+Individuo *geracao(Individuo *pop_atual, uint32_t tam_pop, double p_cruz, double p_mut, bool elitismo)
 {
     Individuo *pop_nova = new Individuo[tam_pop];
-    double sf = soma_fitness(pop_atual, tam_pop);
     for(uint32_t j=0; j<tam_pop; j+=2)
     {
-        uint32_t ind1 = alt_selecao(pop_atual, tam_pop, sf);
-        uint32_t ind2 = alt_selecao(pop_atual, tam_pop, sf);
-        std::pair<Individuo, Individuo> filhos = cruzamento(pop_atual[ind1], pop_atual[ind2], p_cruz, p_mut, false);
+        uint32_t ind1 = alt_selecao(pop_atual, tam_pop);
+        uint32_t ind2 = alt_selecao(pop_atual, tam_pop);
+        std::pair<Individuo, Individuo> filhos = cruzamento(pop_atual[ind1], pop_atual[ind2], p_cruz, p_mut, elitismo);
 
-        //std::pair<uint32_t, uint32_t> escolhidos = selecao(pop_atual, tam_pop, sf);
-        //std::pair<Individuo, Individuo> filhos = cruzamento(pop_atual[escolhidos.first], pop_atual[escolhidos.second], p_cruz, p_mut);
         pop_nova[j] = filhos.first;
         pop_nova[j+1] = filhos.second; 
     }
@@ -199,17 +239,10 @@ Individuo *geracao(Individuo *pop_atual, uint32_t tam_pop, double p_cruz, double
     return pop_nova;
 }
 
-// double random_number()
-// {
-//     int random_number = rand() - (int)(RAND_MAX/2);
-//     double beta = (random_number%(int)(ALFA*100))/100.0;
-//     return beta;
-// }
-
 double random_number()
 {
-    int range = (ALFA*100)*2 + 100;
-    double beta = (rand()%range)/100.0 - ALFA;
+    int range = (alfa*100)*2 + 100;
+    double beta = (rand()%range)/100.0 - alfa;
     return beta;
 }
 
@@ -263,7 +296,6 @@ std::pair<Individuo, Individuo> cruzamento(Individuo &pai1, Individuo &pai2, dou
     }
     mutacao(filhos.first, p_mut);
     mutacao(filhos.second, p_mut);
-
     if(elitismo)
     {
         Individuo melhor = pai1;
@@ -281,9 +313,47 @@ std::pair<Individuo, Individuo> cruzamento(Individuo &pai1, Individuo &pai2, dou
     return filhos;
 }
 
+//---------------------------------------------------------------------------------------------------------------------------------
+//----Execução---------------------------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------------------
 
 int main()
 {
     srand(time(NULL));
-    gen(50,2000,0.8,0.05);
+
+    bool sem_menu = false;
+
+    uint32_t tam_pop = 100;
+    uint32_t max_gen = 1000;
+    double prob_cruz = 0.8;
+    double prob_mut = 0.05;
+    bool elitismo = true;
+
+    if(sem_menu)
+    {
+        gen(tam_pop,max_gen,prob_cruz,prob_mut,elitismo);
+        return 0;
+    }
+
+    std::cout << "Bem vindo!" << std::endl;
+
+    std::cout << "Quantos individuos terao em cada geracao: ";
+    std::cin >> tam_pop;
+
+    std::cout << "Quantas serao as geracoes: ";
+    std::cin >> max_gen;
+
+    std::cout << "Quanto sera a taxa de cruzamento: ";
+    std::cin >> prob_cruz;
+
+    std::cout << "Quanto sera a taxa de mutacao: ";
+    std::cin >> prob_mut;
+
+    std::cout << "Quanto os filhos poderam ser diferentes de seus pais (range): ";
+    std::cin >> alfa;
+
+    std::cout << "Qual a porcentagem de individuos que irao para o torneio: ";
+    std::cin >> torneio;
+
+    gen(tam_pop,max_gen,prob_cruz,prob_mut,elitismo);
 }
