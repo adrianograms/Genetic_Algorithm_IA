@@ -107,6 +107,7 @@ void gen(uint32_t tam_pop, uint32_t max_gen, double prob_cruz, double prob_mut, 
     std::cout << "Fitness: " << melhor.fitness << std::endl;
 
     std::cout << "-------------------------------" << std::endl; 
+    delete[] pop;
 }
 
 double func_obj(double x)
