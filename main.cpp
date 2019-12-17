@@ -32,7 +32,7 @@ std::pair<uint32_t, uint32_t> selecao(Individuo *pop, uint32_t tam_pop, double s
 Individuo *geracao(Individuo *pop_atual, uint32_t tam_pop, double p_cruz, double p_mut);
 double random_number();
 void mutacao(Individuo &ind, double p_mut);
-std::pair<Individuo, Individuo> cruzamento(Individuo &pai1, Individuo &pai2, double p_cruz, double p_mut);
+std::pair<Individuo, Individuo> cruzamento(Individuo &pai1, Individuo &pai2, double p_cruz, double p_mut, bool elitismo);
 
 //---------------------------------------------------------------------------------------------------------------------------------
 //----Implementação----------------------------------------------------------------------------------------------------------------
@@ -41,7 +41,7 @@ void imprimi_pop(Individuo *pop,uint32_t tam_pop)
 {
     for(uint32_t i =0; i< tam_pop; i++)
     {
-        std::cout << pop[i].crom << "," << pop[i].fitness << std::endl;
+        std::cout << pop[i].crom << " | " << pop[i].fitness << std::endl;
     }
     std::cout << std::endl;
 }
@@ -55,6 +55,9 @@ void gen(uint32_t tam_pop, uint32_t max_gen, double prob_cruz, double prob_mut)
     {
         pop = geracao(pop, tam_pop, prob_cruz, prob_mut);
     }
+    std::cout << "Ultima Geração:" << std::endl;
+    std::cout << "Cromossomo" << " | " << "Fitness" << std::endl;
+    std::cout << "--------------------" << std::endl;
     imprimi_pop(pop, tam_pop);
 }
 
@@ -72,7 +75,7 @@ Individuo *inic_pop(uint32_t tam_pop)
     Individuo *populacao = new Individuo[tam_pop];
     for(uint32_t i = 0; i< tam_pop; i++)
     {
-        populacao[i].crom = rand()%500;
+        populacao[i].crom = (double)(rand()%5000)/10;
         populacao[i].fitness = func_obj(populacao[i].crom);
     }
     return populacao;
@@ -153,8 +156,28 @@ std::pair<uint32_t, uint32_t> selecao(Individuo *pop, uint32_t tam_pop, double s
             }
         }
     }
-    //delete[] escolhidos;
     return std::pair<uint32_t, uint32_t> (menor.first, vice_menor.first);
+}
+
+uint32_t alt_selecao(Individuo *pop, uint32_t tam_pop, double soma_fit)
+{
+    uint32_t num_elementos = tam_pop * TORNEIO;
+    std::pair<uint32_t, double> menor;
+
+    menor.first = rand()%num_elementos;
+    menor.second = pop[menor.first].fitness;
+
+    for(uint32_t i = 1; i < num_elementos; i++)
+    {
+        uint32_t novo = rand()%num_elementos;
+        if(pop[novo].fitness < menor.second)
+        {
+            menor.first = novo;
+            menor.second = pop[novo].fitness;
+        }
+    }
+
+    return menor.first;
 }
 
 Individuo *geracao(Individuo *pop_atual, uint32_t tam_pop, double p_cruz, double p_mut)
@@ -163,12 +186,12 @@ Individuo *geracao(Individuo *pop_atual, uint32_t tam_pop, double p_cruz, double
     double sf = soma_fitness(pop_atual, tam_pop);
     for(uint32_t j=0; j<tam_pop; j+=2)
     {
-        //uint32_t ind1 = selecao(pop_atual, tam_pop, sf);
-        //uint32_t ind2 = selecao(pop_atual, tam_pop, sf);
+        uint32_t ind1 = alt_selecao(pop_atual, tam_pop, sf);
+        uint32_t ind2 = alt_selecao(pop_atual, tam_pop, sf);
+        std::pair<Individuo, Individuo> filhos = cruzamento(pop_atual[ind1], pop_atual[ind2], p_cruz, p_mut, false);
 
-        std::pair<uint32_t, uint32_t> escolhidos = selecao(pop_atual, tam_pop, sf);
-
-        std::pair<Individuo, Individuo> filhos = cruzamento(pop_atual[escolhidos.first], pop_atual[escolhidos.second], p_cruz, p_mut);
+        //std::pair<uint32_t, uint32_t> escolhidos = selecao(pop_atual, tam_pop, sf);
+        //std::pair<Individuo, Individuo> filhos = cruzamento(pop_atual[escolhidos.first], pop_atual[escolhidos.second], p_cruz, p_mut);
         pop_nova[j] = filhos.first;
         pop_nova[j+1] = filhos.second; 
     }
@@ -176,10 +199,17 @@ Individuo *geracao(Individuo *pop_atual, uint32_t tam_pop, double p_cruz, double
     return pop_nova;
 }
 
+// double random_number()
+// {
+//     int random_number = rand() - (int)(RAND_MAX/2);
+//     double beta = (random_number%(int)(ALFA*100))/100.0;
+//     return beta;
+// }
+
 double random_number()
 {
-    int random_number = rand() - (int)(RAND_MAX/2);
-    double beta = (random_number%(int)(ALFA*100))/100.0;
+    int range = (ALFA*100)*2 + 100;
+    double beta = (rand()%range)/100.0 - ALFA;
     return beta;
 }
 
@@ -190,14 +220,13 @@ void mutacao(Individuo &ind, double p_mut)
         return;
     else
     {
-        ind.crom = rand()%500;
+        ind.crom = (double)(rand()%5000)/10;
         ind.fitness = func_obj(ind.crom);
     }
     return;
-    
 }
 
-std::pair<Individuo, Individuo> cruzamento(Individuo &pai1, Individuo &pai2, double p_cruz, double p_mut)
+std::pair<Individuo, Individuo> cruzamento(Individuo &pai1, Individuo &pai2, double p_cruz, double p_mut, bool elitismo)
 {
     std::pair<Individuo, Individuo> filhos;
 
@@ -234,6 +263,21 @@ std::pair<Individuo, Individuo> cruzamento(Individuo &pai1, Individuo &pai2, dou
     }
     mutacao(filhos.first, p_mut);
     mutacao(filhos.second, p_mut);
+
+    if(elitismo)
+    {
+        Individuo melhor = pai1;
+        if(pai2.fitness > melhor.fitness)
+            melhor = pai2;
+        if(melhor.fitness < filhos.first.fitness)
+        {
+            filhos.first = melhor;
+        }
+        if(melhor.fitness < filhos.second.fitness)
+        {
+            filhos.second = melhor;
+        }
+    }
     return filhos;
 }
 
@@ -241,5 +285,5 @@ std::pair<Individuo, Individuo> cruzamento(Individuo &pai1, Individuo &pai2, dou
 int main()
 {
     srand(time(NULL));
-    gen(50,1000,0.8,0.05);
+    gen(50,2000,0.8,0.05);
 }
